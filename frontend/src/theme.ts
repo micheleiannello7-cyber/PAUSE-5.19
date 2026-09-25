@@ -213,6 +213,19 @@ export const typography = {
   bodyBold: "Manrope_600SemiBold",
 };
 
+// User reference: cinematic category tiles stay dark in both app themes.
+// These accents belong to the artwork, not the user's premium accent palette.
+export const categoryTilePalette = {
+  surface: "#040A14", top: "#0C1C30", text: "#E8F1F8", muted: "#A7B7CB",
+  highlight: "#C7E3FF", lightOff: "#253348",
+  accents: {
+    all: "#22DFFF", scienza: "#00DFFF", spazio: "#A85AFF", tecnologia: "#00DEFF",
+    natura: "#00E878", animali: "#FFB14F", storia: "#FFDA8C", psicologia: "#AC59FF",
+    "corpo-umano": "#FF4DA9", cultura: "#FFBC4D", economia: "#FFD367",
+    arte: "#E76BEF", geografia: "#00DAB4",
+  } as Record<string, string>,
+};
+
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------

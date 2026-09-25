@@ -3,16 +3,18 @@ import { View, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Category, categoryArtworkUrl, categoryIllustrationUrl } from "@/src/api";
-import { makeStyles, useTheme, withAlpha, radius } from "@/src/theme";
+import { makeStyles, useTheme, withAlpha, radius, categoryTilePalette as palette } from "@/src/theme";
 import { CategoryIcon } from "./category-icon";
 
 export const CATEGORY_VISUAL_MODE: "illustrated" | "line" = "illustrated";
-const ART_VERSION = "colorful-3d-v3";
+const ART_VERSION = "reference-3d-v6";
 type ArtworkProps = {
   category: Pick<Category, "id" | "color" | "illustration_generated">;
   testID: string; wide?: boolean; compact?: boolean; cornerRadius?: number;
   /** Stile "vetro" (onboarding): solo l'oggetto 3D ritagliato, senza piastrella nera, con alone morbido. */
   glass?: boolean;
+  /** User's reference: full-size cinematic artwork, separate interactive light. */
+  reference?: boolean;
   /** Sorgente immagine alternativa (anteprime di nuove famiglie di icone). */
   uriOverride?: string;
 };
@@ -20,6 +22,8 @@ type ArtworkProps = {
 export function CategoryArtwork({ category, ...props }: ArtworkProps) {
   const uri = props.uriOverride
     ? props.uriOverride
+    : props.reference
+    ? categoryArtworkUrl(category.id, category.illustration_generated || ART_VERSION)
     : props.glass
     ? categoryArtworkUrl(category.id, category.id === "all" ? ART_VERSION : (category.illustration_generated || ART_VERSION), true)
     : category.id === "all"
@@ -28,16 +32,16 @@ export function CategoryArtwork({ category, ...props }: ArtworkProps) {
   return <Artwork key={`${CATEGORY_VISUAL_MODE}:${uri}`} category={category} uri={uri} {...props} />;
 }
 
-function Artwork({ category, uri, testID, wide = false, compact = false, cornerRadius = radius.lg, glass = false }: Omit<ArtworkProps, "uriOverride"> & { uri: string | null }) {
+function Artwork({ category, uri, testID, wide = false, compact = false, cornerRadius = radius.lg, glass = false, reference = false }: Omit<ArtworkProps, "uriOverride"> & { uri: string | null }) {
   const styles = useStyles();
   const { colors } = useTheme();
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const showImage = CATEGORY_VISUAL_MODE === "illustrated" && !!uri && !failed;
-  const imageStyle = wide ? [styles.bannerImage, glass && styles.glassBanner] : [styles.image, compact && styles.compactImage, glass && styles.glassImage];
+  const imageStyle = wide ? [styles.bannerImage, glass && styles.glassBanner] : [styles.image, compact && styles.compactImage, glass && styles.glassImage, reference && styles.referenceImage];
   return (
-    <View testID={testID} style={[styles.fill, { borderRadius: cornerRadius }, glass && styles.glassFill]} accessibilityState={{ busy: showImage && !loaded }}>
-      {glass ? (
+    <View testID={testID} style={[styles.fill, { borderRadius: cornerRadius }, glass && styles.glassFill, reference && styles.referenceFill]} accessibilityState={{ busy: showImage && !loaded }}>
+      {glass && !reference ? (
         <View pointerEvents="none" style={[wide ? styles.glowWide : styles.glow, { backgroundColor: withAlpha(category.color, 0.16), boxShadow: `0px 0px ${wide ? 34 : 26}px ${wide ? 12 : 8}px ${withAlpha(category.color, 0.16)}` as any }]} />
       ) : null}
       {(!showImage || !loaded) ? (
@@ -52,7 +56,11 @@ function Artwork({ category, uri, testID, wide = false, compact = false, cornerR
       </View> : null}
       {/* Quiet framing, not desaturation: the new objects retain their full
           colour. No luminous backplates or clips from the previous art family. */}
-      {!wide && !glass ? <LinearGradient
+      {reference && !wide ? <LinearGradient
+        colors={[withAlpha(palette.surface, 0), withAlpha(palette.surface, 0), palette.surface, palette.surface]}
+        locations={[0, 0.49, 0.70, 1]} style={StyleSheet.absoluteFill}
+      /> : null}
+      {!wide && !glass && !reference ? <LinearGradient
         colors={[withAlpha(colors.artworkSurface, 0), withAlpha(colors.artworkSurface, 0), withAlpha(colors.artworkSurface, 0.94), colors.artworkSurface]}
         locations={[0, 0.48, 0.81, 1]} style={StyleSheet.absoluteFill}
       /> : null}
@@ -63,6 +71,8 @@ function Artwork({ category, uri, testID, wide = false, compact = false, cornerR
 const useStyles = makeStyles((colors) => ({
   fill: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.artworkSurface, overflow: "hidden", pointerEvents: "none" },
   glassFill: { backgroundColor: "transparent" },
+  referenceFill: { backgroundColor: palette.surface },
+  referenceImage: { top: 1, left: "1%", width: "98%", aspectRatio: 1 },
   image: { position: "absolute", top: -2, left: "5%", width: "90%", aspectRatio: 1 },
   compactImage: { top: 0, left: "9%", width: "82%" },
   glassImage: { top: "8%", left: "17%", width: "66%" },

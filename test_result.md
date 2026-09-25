@@ -103,8 +103,22 @@
 #====================================================================================================
 # ⚠️ PAUSE: prima di modificare/testare leggere /app/memory/CONSTITUTION.md (Costituzione tecnica vincolante: minimum change, niente rigenerazione asset, niente AI a runtime, identità visiva dark-navy/cyan/glass). Rispondere in italiano.
 
-user_problem_statement: "Badge introduzione come riferimento: pillola unica arrotondata con 3 sezioni e separatori sottili, leggermente più grande del riferimento; mantenere icone 3D attuali. Home: stesso sfondo del passo nome, attenuato. Categorie raggiungibili dalla Home: riutilizzare realmente la schermata argomenti dell'onboarding, inclusi Curiosità/Mini lezioni, così le modifiche UI si applicano a entrambe."
+user_problem_statement: "Rigenerare icone categorie fedeli alla foto allegata: soggetti 3D realistici, tessere scure arrotondate, font e luce inferiore colorata. Solo 12 categorie esistenti; creare Economia e Arte nello stesso stile. Luce accesa solo su selezione; Qualsiasi accende tutte. Confermato dall'utente: Si procedi, sii fedele all allegato."
 frontend:
+  - task: "Categorie 3D reference-v6 con luci di selezione"
+    implemented: true
+    working: true
+    file: "frontend/src/components/category-grid.tsx; category-artwork.tsx; category-tile-effects.tsx; home-controls.tsx; src/theme.ts; src/api.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "13 nuovi artwork pubblicati in Object Storage via manifest esistente. SVG edge/light separati dalle immagini; animazione 180ms; all || selected.has(id) per luci/checkbox, toggle/persistenza invariati. Nome e conteggi preservati. Self-test IT/EN 390px: tutte icone caricate, Scienza on, all 13 on (attesa opacità finale), all→Arte singola PASS. API categorie 12 e v6 PASS. Lint PASS e nessun errore tsc nei file modificati. Testare onboarding/persistenza/rapidi toggle/responsive/light-theme e Home focus. Nessuna chiamata AI/TTS/pagamenti durante test."
+      - working: true
+        agent: "testing"
+        comment: "iteration_7: backend 17/17; frontend onboarding, persistenza, light states, counts, Home, intro badge, responsive IT/EN e temi PASS. Solo warning Expo web preesistenti non bloccanti; nessun bug funzionale. Test su browser, non dispositivi nativi."
   - task: "Pillola introduzione con tre badge e icone 3D originali"
     implemented: true
     working: true
@@ -197,6 +211,9 @@ metadata:
   run_ui: true
 test_plan:
   current_focus:
+    - "Task corrente SOLO nuove categorie 3D: immagini 13/13, assenza categorie aggiunte, selezioni none/single/multi/all e all→single; luci on/off e checked state coerenti"
+    - "Persistenza Explore→Home→Explore; onboarding completo con selezione categorie; Home focus e immagini badge/lettore non regressi"
+    - "Responsive 320/390/430 e IT/EN, nome Economia & Denaro/Arte & Design/Geografia & Viaggi non troncato, temi chiaro/scuro"
     - "Introduzione: pillola 3 badge, originali icone caricate, 320/390/430px, IT/EN, nomi lunghi, Leggi"
     - "Home sfondo attenuato, tocchi/swipe/scroll/categorie/progresso integri; tema chiaro/scuro"
     - "Picker condiviso categorie/onboarding: formati stories-only/lessons-only/entrambi; non deselezionare ultimo formato; conteggi/hint corretti; all esclusivo"
@@ -206,6 +223,8 @@ test_plan:
   test_all: false
   test_priority: "high_first"
 agent_communication:
+  - agent: "main"
+    message: "Task corrente categorie 3D v6. Test SOLO nuovo task (vecchi focus sotto storici). Preview corrente leggere .env: https://pause-control-11.preview.emergentagent.com. Credenziali: sessione anonima, documento aggiornato. Non modificare codice app, dati utenti esistenti né contenuti. Non chiamare generazione AI/TTS/pagamenti. Screenshot self-test /root/.emergent/automation_output/20260925_160437. Luci testID category-light-{id} aria-label on/off; layer category-selected-{id} sempre montato con opacity 0/1, attendere valore finale >.99/<.01 dopo tap (180ms). Chip aria-checked true anche tutte le 12 categorie quando all attivo. I test conteggi restano possibili. Home ha propri ID category-light-home-{id} e focus indipendente, non interessi. Arte/Economia aggiunte solo come immagini, categorie già esistevano. Manifest precedente archiviato."
   - agent: "main"
     message: "Task corrente badge/Home/argomenti (non ritestare vecchi task profilo o intero catalogo). URL https://pause-preview-1.preview.emergentagent.com. Sessione anonima isolata, nessuna password. Lint batch PASS; tsc ha segnalato absoluteFillObject nei due nuovi componenti, corretto con posizionamento esplicito. Vecchi errori tsc altrove non toccati. Verificare flussi e bug in scope senza modificare codice. Non generare storie/copertine/audio (budget v9 esaurito, task sospeso)."
   - agent: "main"

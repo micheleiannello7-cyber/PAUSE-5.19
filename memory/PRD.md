@@ -53,3 +53,37 @@ pre-generati (storie, capitoli, copertine, audio TTS) distribuiti dal backend.
 ## Backlog / note
 - Integrazioni a pagamento (Stripe, ElevenLabs) restano disattivate finché non richieste.
 - Nessuna rigenerazione AI di contenuti/copertine/audio senza richiesta esplicita.
+
+## Categorie 3D da riferimento — 25 settembre 2026
+- Richiesta esplicita: rigenerare icone categorie fedeli all'allegato, incluse tessere
+  dark arrotondate, font e luce inferiore accesa solo alla selezione. Conferma:
+  «Si procedi, sii fedele all allegato». Con `all` tutte le luci sono accese.
+- Pubblicata famiglia `reference-3d-v6`: 12 categorie reali + cristallo `all`.
+  Beuta, Saturno, chip cyan, germoglio, zampa, busto classico, loto/Psicologia,
+  testa con cervello/Corpo umano, libro, monete/Economia, tavolozza/Arte, montagna.
+  Nessuna categoria aggiunta/rinominata; quelle dell'allegato non presenti ignorate.
+- 13 WebP 480px (circa 334KB complessivi) salvati in Object Storage gestito;
+  manifest `backend/category_art_manifest.json`. Vecchio manifest conservato in
+  `backend/category_art/previous-glossy-3d-v5.json`; vecchi oggetti non cancellati.
+  Sorgenti/crop/import report: `backend/category_art/reference-3d-v4/` (nome cartella
+  di lavorazione; versione pubblicata v6). Script offline `import_reference_categories.py`.
+  Nessuna AI a runtime, né modifiche a storie, copertine, audio, dati degli utenti.
+- `CategoryGrid` condiviso da onboarding ed Explore: artwork grande, bordi SVG,
+  Manrope Medium (approssimazione del font del riferimento, non identificabile con
+  certezza dalla sola immagine), conteggi dinamici preservati, luce SVG/Animated 180ms.
+  2 colonne su schermi piccoli, 3 standard, 4 tablet. `category-tile-effects.tsx`
+  condiviso anche dalle tessere Home (qui la luce rappresenta il focus del mazzo).
+- Palette dedicata in `src/theme.ts`, costante nei temi chiaro/scuro per rispettare
+  il riferimento. `CategoryArtwork` ha variante `reference`; cache revision v6 anche
+  per i badge. Logica/persistenza filtri invariata: all resta esclusivo.
+- Self-test: 12 categorie API con versione v6; preview 390×844 IT/EN; caricamento
+  icone, Scienza singola, 13 luci con Qualsiasi e passaggio Qualsiasi→Arte PASS.
+  Lint file modificati PASS; nessun errore TypeScript nei file modificati.
+- Verifica finale `test_reports/iteration_7.json`: backend 17/17 PASS (13 immagini,
+  categorie e cutout badge); onboarding, salvataggio, selezioni, Home, intro storia,
+  IT/EN 320/390/430, temi chiaro/scuro, assenza overflow/ID duplicati PASS.
+  Test esclusivamente in preview browser; nessun dispositivo nativo disponibile.
+  Driver animazione luci nativo iOS/Android, JS web per evitare warning di fallback.
+- P0: nessun blocco nel perimetro richiesto.
+- P1: validazione visiva dell'utente su dispositivo iOS/Android.
+- P2: eventuali ritocchi delle singole icone solo su richiesta.

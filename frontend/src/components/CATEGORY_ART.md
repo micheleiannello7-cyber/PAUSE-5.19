@@ -1,5 +1,16 @@
 # PAUSE — due serie conservate
 
+## Serie attiva — reference-3d-v6 (richiesta esplicita 25/09/2026)
+Rigenerata fedelmente alla foto fornita dall'utente: beuta, Saturno, chip, germoglio,
+zampa, busto, loto/Psicologia, testa anatomica, libro, monete, tavolozza, montagna;
+cristallo prismatico per Qualsiasi. Nessuna categoria creata/rinominata.
+13 WebP in Object Storage; manifest precedente conservato in
+`backend/category_art/previous-glossy-3d-v5.json`. Asset precedenti non cancellati.
+Luce di selezione NON disegnata nel bitmap: `category-tile-effects.tsx` la anima
+solo quando selezionata; in CategoryGrid `all` accende tutte. Home mantiene il suo
+focus indipendente. Font Manrope Medium, palette reference in theme.ts.
+Le note seguenti sono storiche, non descrivono la famiglia attualmente pubblicata.
+
 ## Serie vettoriale originale (approvata)
 `category-icon.tsx` contiene i 13 disegni SVG originali completi (`CATEGORY_DRAWINGS`).
 Non è stata cancellata, sostituita o convertita in immagini. Rimane utilizzabile

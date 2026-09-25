@@ -1,0 +1,32 @@
+{
+  "summary": "Verified the BUG FIX 'Le card non si aprono nella home al click' on public preview (Expo web, viewport 390x844, fresh anonymous IT user via localStorage pause.user_id=<uuid>, pause.onboarded.v2=1, pause.lang=it; interests seeded via POST /api/user/interests -> 200). All 6 request bullets pass (13/13 assertions). Home /(tabs)/discover: clicking the active card at (a) center of the TITLE text testID home-story-<id>-title, (b) bottom-left corner near title, (c) upper image area (~15% from top), and (d) top chips row — each navigates to /deep-dive/<id> of the active card story-card-<id>. Horizontal swipe on discover-swipe-area (mouse drag ~250px) changes the active card (from photosynthesis-basics to v5-arcobaleno-arco) and does NOT open a story; a subsequent short click on the new title navigates to /deep-dive/v5-arcobaleno-arco. Long-press (~700ms hold) shows the preview panel home-story-<id>-preview with opacity 1 (and pointerEvents='none' — no click capture), releasing fades opacity back to 0 and stays on Home; a normal short click after release still navigates. Category tiles home-cat-scienza|spazio|natura toggle without errors; 'Vedi tutte' (home-see-all) navigates to /explore. Reader /deep-dive/black-holes-basics?start=1: deep-dive-chapter-card-1 rendered with visible tinted cyan border rgba(63,224,255,0.58), 1px, plus cyan glow boxShadow rgba(63,224,255,0.22) 0 0 48px; label 'CAPITOLO 1 DI 6' correct; chapter text readable. Backend smoke: GET /api/stories/black-holes-basics -> 200 (title 'Cos'è davvero un buco nero?', 6 chapters). Non-blocking pre-existing web warnings only (textShadow*, props.pointerEvents deprecated on RN Web; Reanimated easing web fallback).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "React Native Web style props", "issue": "'textShadow*' style props deprecated on web (use shorthand 'textShadow') and 'props.pointerEvents' deprecated (use style.pointerEvents). Pre-existing, non-blocking. Reference: /app/frontend/src/components/home-story-card.tsx:44,51 uses pointerEvents as prop (required workaround for RN Web click-through fix); reader-section.tsx/reader-header.tsx use textShadowColor/Offset/Radius."},
+      {"component": "Reanimated (web)", "issue": "'Selected easing is not currently supported on web. Using linear easing instead.' Non-blocking, pre-existing."}
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/artifacts_iter/iter10_reader_ch1.jpeg"
+  ],
+  "action_items": [
+    "Optional (non-blocking): migrate remaining textShadow* to shorthand 'textShadow'; pick a Reanimated web-supported easing to silence console warnings. Note: the pointerEvents prop on the title overlay/preview panel in home-story-card.tsx is the FIX itself (RN Web ignores pointerEvents in style), so keep as prop even though it triggers the deprecation warning."
+  ],
+  "critical_code_review_comments": [
+    "Fix verified in /app/frontend/src/components/home-story-card.tsx:44 — Animated.View around title now uses pointerEvents='box-none' as a PROP (RN Web reads props.pointerEvents; style.pointerEvents 'box-none' is unknown on web and would leave the wrapper capturing clicks). Underlying <Pressable style=StyleSheet.absoluteFill onPress=onOpen> now receives all clicks in the title band.",
+    "Preview overlay Animated.View at line 51 uses pointerEvents='none' as a PROP, so during the fade-in it never captures the click either; verified elementFromPoint at title center hits the Pressable overlay, not the title/preview View.",
+    "Deck swipe (home-story-deck.tsx) uses dragged.value flag on onOpen (line 144) so a >8px drag suppresses navigation on click release — confirmed: swipe→no nav; short click→nav.",
+    "Reader chapter card styling (/app/frontend/src/components/reader-section.tsx) applies stronger border (chapterTint alpha 0.58) and cyan glow via boxShadow — visible on ch1 as rgba(63,224,255,0.58) 1px + 48px glow."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "100% (1/1 smoke)", "frontend": "100% (13/13 assertions across 6 spec bullets)" },
+  "seed_data_creation": "Ephemeral anonymous user id per run via localStorage (pause.user_id=<uuid>, pause.onboarded.v2=1, pause.lang=it) + POST /api/user/interests with ['spazio','scienza','natura'] -> 200. No existing users touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Home testIDs verified: home-screen, home-header, home-content, home-deck-area, discover-swipe-area, discover-deck-dots, discover-deck-dot-<n>, deck-layer-active|previous|next, story-card-<id> (active) / deck-card-<id>-<instance>, home-story-<id>-open, home-story-<id>-title, home-story-<id>-preview (opacity animated), home-story-<id>-preview-title, home-story-<id>-hook, home-story-<id>-preview-hint, home-listen-story, home-categories, home-category-list, home-cat-<id>, home-cat-label-<id>, home-see-all, home-see-all-label, home-min-one-toast. Bug regression selector to watch: elementFromPoint at the title center must resolve to the Pressable overlay (StyleSheet.absoluteFill), not to the title body Animated.View — currently correct.",
+  "rca_of_issue": "RCA confirmed: on React Native Web the Animated.View wrapping the title had pointerEvents 'box-none' only inside `style` (styles.body). RN Web does not implement pointerEvents:'box-none' as a CSS value, so the wrapper defaulted to pointer-events:auto and, being rendered above the Pressable overlay in DOM order, captured clicks in the bottom band. Mitigation: pass pointerEvents='box-none' as a JSX PROP on the title Animated.View and pointerEvents='none' as PROP on the preview Animated.View. Verified fix by clicking at 4 different points of the active card (title center, bottom-left, upper image, top chips) — all navigate correctly to /deep-dive/<id>; no regressions on swipe, long-press preview, category toggles, 'Vedi tutte', or reader."
+}

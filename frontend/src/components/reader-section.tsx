@@ -74,22 +74,22 @@ export function ChapterSection({
     <Animated.View style={[styles.section, focus]} testID={`deep-dive-chapter-${chapter.number}`}>
       {/* Vetro scuro illuminato appena dal colore del tema: fondo quasi nero
           traslucido, bordo sottile tinto, riflesso in alto, alone diffuso. */}
-      <View style={[styles.card, { borderColor: withAlpha(tint, 0.34), boxShadow: `0px 0px 36px ${withAlpha(tint, 0.10)}` as any }]} testID={`deep-dive-chapter-card-${chapter.number}`}>
+      <View style={[styles.card, { borderColor: withAlpha(tint, 0.58), boxShadow: `0px 0px 48px ${withAlpha(tint, 0.22)}, 0px 8px 24px ${withAlpha(colors.surfaceDeep, 0.6)}` as any }]} testID={`deep-dive-chapter-card-${chapter.number}`}>
         <LinearGradient
           pointerEvents="none"
-          colors={[withAlpha(colors.surfaceDeep, 0.66), withAlpha(colors.surfaceDeep, 0.56), withAlpha(colors.surfaceDeep, 0.74)]}
+          colors={[withAlpha(colors.onSurface, 0.075), withAlpha(colors.onSurface, 0.04), withAlpha(colors.onSurface, 0.06)]}
           locations={[0, 0.5, 1]} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         <LinearGradient
           pointerEvents="none"
-          colors={[withAlpha(tint, 0.07), withAlpha(tint, 0)]}
-          locations={[0, 0.5]}
+          colors={[withAlpha(tint, 0.16), withAlpha(tint, 0.05), withAlpha(tint, 0.03)]}
+          locations={[0, 0.45, 1]}
           style={StyleSheet.absoluteFill}
         />
         <LinearGradient
           pointerEvents="none"
-          colors={[withAlpha(tint, 0), withAlpha(tint, 0.7), withAlpha(tint, 0)]}
+          colors={[withAlpha(tint, 0), withAlpha(tint, 0.95), withAlpha(tint, 0)]}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
           style={styles.cardHighlight}
         />
@@ -122,6 +122,7 @@ const useStyles = makeStyles((colors) => ({
   },
   card: {
     borderRadius: 26, borderWidth: 1, overflow: "hidden",
+    backgroundColor: withAlpha(colors.surfaceDeep, 0.55),
     paddingHorizontal: spacing.lg + 4, paddingTop: spacing.lg + 4, paddingBottom: spacing.xl,
     gap: spacing.md,
   },

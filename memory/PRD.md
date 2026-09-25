@@ -132,3 +132,14 @@ pre-generati (storie, capitoli, copertine, audio TTS) distribuiti dal backend.
 - Sistema di scroll a pagine (spring nativo / snapToOffsets web) NON toccato.
 - Test `test_reports/iteration_9.json`: tutto PASS (intro, copertina fuori schermo sui
   capitoli, etichette 1..6, palette spazio/storia, finale con sfondo+pulsanti, 320/390).
+- Ritocco su richiesta: contenitori più evidenti (bordo tinta 0.58, alone 48px a 0.22 +
+  ombra, riempimento `onSurface` 0.04–0.075 + velo tinta 0.16→0.03 su base `surfaceDeep`
+  0.55, riflesso superiore 0.95).
+
+## Bug fix: card Home non si apriva toccando il titolo — 25 settembre 2026
+- Causa: in `home-story-card.tsx` la fascia titolo (Reanimated `Animated.View`) aveva
+  `pointerEvents: "box-none"` solo nello style → su web ignorato, il click sul titolo veniva
+  assorbito e non raggiungeva il `Pressable` a tutta card. Fix: `pointerEvents="box-none"`
+  come prop (e `pointerEvents="none"` sul pannello anteprima). Il tasto Ascolta resta attivo.
+- Test `test_reports/iteration_10.json`: tap su titolo/angolo/immagine/chip aprono la storia;
+  swipe non apre; long-press anteprima ok; tessere e "Vedi tutte" ok.

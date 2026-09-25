@@ -41,14 +41,14 @@ export function HomeStoryCard({ story, active, instance, onOpen, onListen }: {
       <Pressable testID={`${id}-open`} style={StyleSheet.absoluteFill} onPress={onOpen} onLongPress={showPreview} onPressOut={hidePreview} delayLongPress={350}
         accessibilityRole="button" accessibilityLabel={`${label}: ${story.title}`} accessibilityHint={story.hook} />
       <StoryMetaChips story={story} minutes={story.reading_time_min} idPrefix={id} style={styles.topRow} />
-      <Animated.View style={[styles.body, bodyStyle]}>
+      <Animated.View style={[styles.body, bodyStyle]} pointerEvents="box-none">
         <HighlightedTitle testID={`${id}-title`} title={story.title} highlight={story.highlight_words} style={[styles.title, { fontSize, lineHeight: fontSize * 1.14 }]}
           numberOfLines={4} adjustsFontSizeToFit minimumFontScale={0.8} />
         {onListen && <Pressable testID={active ? "home-listen-story" : `${id}-listen`} accessibilityRole="button" accessibilityLabel={t.audio_listen_short} onPress={onListen} style={styles.listen}>
           <Ionicons name="headset-outline" size={19} color={colors.cyan} />
         </Pressable>}
       </Animated.View>
-      <Animated.View testID={`${id}-preview`} style={[styles.panel, styles.noTouch, panelStyle]}
+      <Animated.View testID={`${id}-preview`} style={[styles.panel, styles.noTouch, panelStyle]} pointerEvents="none"
         onLayout={({ nativeEvent }) => { const h = Math.ceil(nativeEvent.layout.height); if (h && h !== panelHeight) setPanelHeight(h); }}>
         <View style={styles.panelGrip} />
         <Text testID={`${id}-preview-title`} style={styles.panelTitle} numberOfLines={2}>{story.title}</Text>

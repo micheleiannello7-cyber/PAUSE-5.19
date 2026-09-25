@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { View, Text, Pressable, ActivityIndicator, ScrollView, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, Animated as RNAnimated, LayoutChangeEvent, Platform, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -7,9 +7,10 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { api, StoryPreview, hasHero, heroUrl } from "@/src/api";
-import { makeStyles, useTheme, spacing, typography } from "@/src/theme";
+import { makeStyles, useTheme, spacing, typography, radius, withAlpha } from "@/src/theme";
 import { useUserId } from "@/src/session";
 import { getReadingProgress, ReadingProgress } from "@/src/reading-progress";
+import { getHomeOffCategories, saveHomeOffCategories } from "@/src/home-focus";
 import { PauseLogo } from "@/src/components/pause-logo";
 import { GradientButton } from "@/src/components/gradient-button";
 import { HomeCategoryTile } from "@/src/components/home-controls";
@@ -47,7 +48,7 @@ export default function Discover() {
   const { t, lang } = useI18n();
   const styles = useStyles();
   const { colors } = useTheme();
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth } = useWindowDimensions();
   const width = Math.min(windowWidth, 600);
   const gridPadding = width * 0.078;
   const gridGap = width * 0.05;
@@ -61,12 +62,58 @@ export default function Discover() {
     const n = userState?.display_name?.trim();
     return n ? n.split(/\s+/)[0].slice(0, 18) : null;
   }, [userState?.display_name]);
-  const [focusCat, setFocusCat] = useState<string | null>(null);
-  const deckInterests = useMemo(() => focusCat ? [focusCat] : interests, [focusCat, interests]);
+  const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: api.categories });
+  const tileCats = useMemo(() => {
+    const all = categories ?? [];
+    const mine = interests.length ? all.filter((c) => interests.includes(c.id)) : all;
+    const order = ["scienza", "spazio", "tecnologia", "natura", "animali", "storia", "arte", "corpo-umano"];
+    return [...(mine.length ? mine : all)].sort((a, b) => {
+      const rank = (id: string) => order.includes(id) ? order.indexOf(id) : order.length;
+      return rank(a.id) - rank(b.id);
+    }).slice(0, 8);
+  }, [categories, interests]);
+  // Tessere spente dall'utente in Home (multi-selezione, salvata sul dispositivo).
+  // Di default tutte le categorie scelte sono accese; almeno una resta sempre accesa.
+  const [offCats, setOffCats] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!userId) return;
+    getHomeOffCategories(userId).then(setOffCats);
+  }, [userId]);
+  const activeIds = useMemo(() => {
+    const off = new Set(offCats ?? []);
+    const on = tileCats.filter((c) => !off.has(c.id)).map((c) => c.id);
+    return on.length ? on : tileCats.map((c) => c.id);
+  }, [tileCats, offCats]);
+  const allOn = activeIds.length === tileCats.length;
+  const deckInterests = useMemo(() => allOn ? interests : activeIds, [allOn, interests, activeIds]);
   const interestsKey = deckInterests.join(",");
   const modesKey = [...(userState?.content_modes ?? ["stories", "lessons"])].sort().join(",");
-  const ready = !!userId && !!userState;
-  const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: api.categories });
+  const ready = !!userId && !!userState && !!categories && offCats !== null;
+
+  // Avviso breve sotto le tessere: "tieni attiva almeno una categoria".
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastOpacity = useRef(new RNAnimated.Value(0)).current;
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showMinOneToast = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+    setToastVisible(true);
+    RNAnimated.timing(toastOpacity, { toValue: 1, duration: 160, useNativeDriver: Platform.OS !== "web" }).start();
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => {
+      RNAnimated.timing(toastOpacity, { toValue: 0, duration: 240, useNativeDriver: Platform.OS !== "web" }).start(() => setToastVisible(false));
+    }, 2200);
+  }, [toastOpacity]);
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  const toggleCat = useCallback((id: string) => {
+    const isOn = activeIds.includes(id);
+    if (isOn && activeIds.length === 1) { showMinOneToast(); return; }
+    Haptics.selectionAsync().catch(() => {});
+    const currentOff = tileCats.map((c) => c.id).filter((c) => !activeIds.includes(c));
+    const next = isOn ? [...currentOff, id] : currentOff.filter((c) => c !== id);
+    setOffCats(next);
+    if (userId) void saveHomeOffCategories(userId, next);
+  }, [activeIds, tileCats, userId, showMinOneToast]);
 
   const [resume, setResume] = useState<ReadingProgress | null>(null);
   useFocusEffect(useCallback(() => {
@@ -137,20 +184,15 @@ export default function Discover() {
     if (deck.length === 0 || cursor >= deck.length - PREFETCH_AHEAD) void loadBatch(deck.map((s) => s.id));
   }, [ready, userId, interestsKey, modesKey, lang, exhausted, loading, error, deck, cursor, loadBatch, resetDeck]);
 
-  const tileCats = useMemo(() => {
-    const all = categories ?? [];
-    const mine = interests.length ? all.filter((c) => interests.includes(c.id)) : all;
-    const order = ["scienza", "spazio", "tecnologia", "natura", "animali", "storia", "arte", "corpo-umano"];
-    return [...(mine.length ? mine : all)].sort((a, b) => {
-      const rank = (id: string) => order.includes(id) ? order.indexOf(id) : order.length;
-      return rank(a.id) - rank(b.id);
-    }).slice(0, 8);
-  }, [categories, interests]);
   const showEmpty = deck.length === 0 && (exhausted || (error && !loading));
-  // Match the reference on its aspect ratio; use extra portrait height for
-  // the cover instead of leaving a large void between categories and progress.
-  const usableHeight = windowHeight - insets.top - Math.max(insets.bottom, 10) - 64;
-  const cardHeight = Math.max(264, width * (700 / 942), Math.min(width * 1.06, usableHeight * 0.48));
+  // Home statica: niente scroll. Il mazzo prende tutto lo spazio che resta
+  // sopra categorie e barra progressi (misurato a layout), la card si adatta.
+  const [deckAreaH, setDeckAreaH] = useState(0);
+  const onDeckLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = Math.round(e.nativeEvent.layout.height);
+    if (h > 0 && h !== deckAreaH) setDeckAreaH(h);
+  }, [deckAreaH]);
+  const cardHeight = Math.max(170, Math.min(deckAreaH - 20, width * 1.2));
   // Dalla card si parte sempre dall'introduzione (nessun salto al capitolo 1).
   const openStory = useCallback((story: StoryPreview) => router.push(`/deep-dive/${story.id}`), [router]);
   const listenStory = useCallback((story: StoryPreview) => {
@@ -169,8 +211,8 @@ export default function Discover() {
           </View>
         ) : null}
       </View>
-      <ScrollView testID="home-content" style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={false}>
-        <View style={[styles.column, { width }]}>
+      <View testID="home-content" style={[styles.content, { width }]}>
+        <View style={styles.deckArea} onLayout={onDeckLayout} testID="home-deck-area">
         {showEmpty ? (
           <View testID="discover-empty" style={styles.empty}>
             <Ionicons name="checkmark-circle-outline" size={44} color={colors.success} />
@@ -178,12 +220,13 @@ export default function Discover() {
             <Text testID="discover-empty-message" style={styles.emptyText}>{t.explored_all_sub}</Text>
             <GradientButton label={t.restart} icon="refresh" onPress={resetDeck} testID="reset-skipped" style={styles.resetBtn} />
           </View>
-        ) : deck[cursor] ? (
+        ) : deck[cursor] && deckAreaH > 0 ? (
           <HomeStoryDeck key={`${interestsKey}|${lang}|${generation.current}`} deck={deck} cursor={cursor} width={width} height={cardHeight} onChange={setCursor} onOpen={openStory}
             onListen={userState?.is_premium ? listenStory : undefined} />
         ) : (
-          <View testID="discover-loading" style={[styles.loading, { height: cardHeight + 26 }]}><ActivityIndicator color={colors.brand} /></View>
+          <View testID="discover-loading" style={styles.loading}><ActivityIndicator color={colors.brand} /></View>
         )}
+        </View>
         {showResume && resume ? (
           <View style={[styles.resumeSection, { marginHorizontal: gridPadding }]}>
             <ResumeCard progress={resume} onPress={() => router.push(`/deep-dive/${resume.story.id}`)} />
@@ -199,18 +242,22 @@ export default function Discover() {
               </Pressable>
             </View>
             <View style={[styles.catsGrid, { columnGap: gridGap }]} testID="home-category-list">
-              {tileCats.map((cat) => <HomeCategoryTile key={cat.id} cat={cat} size={tileSize} glass active={focusCat === cat.id} onPress={() => {
-                Haptics.selectionAsync().catch(() => {});
-                setFocusCat((prev) => prev === cat.id ? null : cat.id);
-              }} />)}
+              {tileCats.map((cat) => <HomeCategoryTile key={cat.id} cat={cat} size={tileSize} glass active={activeIds.includes(cat.id)} onPress={() => toggleCat(cat.id)} />)}
+              {toastVisible ? (
+                <RNAnimated.View pointerEvents="none" style={[styles.toastWrap, { opacity: toastOpacity }]} testID="home-min-one-toast">
+                  <View style={styles.toast}>
+                    <Ionicons name="alert-circle" size={14} color={colors.error} />
+                    <Text style={styles.toastText} testID="home-min-one-toast-text">{t.home_min_one_category}</Text>
+                  </View>
+                </RNAnimated.View>
+              ) : null}
             </View>
           </View>
         ) : null}
         <View style={[styles.progressSection, { marginHorizontal: gridPadding }]}>
           <HomeReadingProgress count={userState?.completed_story_ids.length ?? 0} />
         </View>
-        </View>
-      </ScrollView>
+      </View>
       <MilestoneCelebration milestone={milestone} onClose={dismissMilestone} onStats={() => { dismissMilestone(); router.push("/stats"); }} />
     </View>
   );
@@ -222,18 +269,24 @@ const useStyles = makeStyles((colors) => ({
   greeting: { flexShrink: 1, marginLeft: spacing.md, alignItems: "flex-end" },
   greetingHi: { color: colors.onSurfaceTertiary, fontFamily: typography.bodyMedium, fontSize: 11, letterSpacing: 0.3, lineHeight: 14 },
   greetingName: { color: colors.brand, fontFamily: typography.displayBold, fontSize: 17, letterSpacing: -0.2, lineHeight: 21, maxWidth: 170 },
-  scroll: { flex: 1, alignSelf: "stretch" },
-  content: { flexGrow: 1, alignItems: "center", paddingBottom: 18 },
-  column: { flexGrow: 1 },
+  content: { flex: 1, alignSelf: "center", paddingBottom: 12 },
+  deckArea: { flex: 1, justifyContent: "center", minHeight: 190 },
   catsSection: {},
   catsHead: { height: 38, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   catsTitle: { color: colors.onSurface, fontFamily: typography.displayBold, fontSize: 16 },
   seeAll: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 3 },
   seeAllText: { color: colors.onSurfaceTertiary, fontFamily: typography.bodyMedium, fontSize: 10 },
   catsGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: 12 },
-  progressSection: { marginTop: "auto", paddingTop: 20 },
-  resumeSection: { marginTop: 14 },
-  loading: { alignItems: "center", justifyContent: "center" },
+  toastWrap: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
+  toast: {
+    flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: 34, borderRadius: radius.md,
+    backgroundColor: withAlpha(colors.surface, 0.94), borderWidth: 1, borderColor: withAlpha(colors.error, 0.55),
+    boxShadow: `0px 6px 18px ${withAlpha(colors.surface, 0.6)}` as any,
+  },
+  toastText: { color: colors.onSurface, fontFamily: typography.bodyMedium, fontSize: 12 },
+  progressSection: { paddingTop: 16 },
+  resumeSection: { marginTop: 10 },
+  loading: { flex: 1, alignItems: "center", justifyContent: "center" },
   pressed: { opacity: 0.92 },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 48, gap: spacing.md },
   emptyTitle: { color: colors.onSurface, fontFamily: typography.displayBold, fontSize: 18 },

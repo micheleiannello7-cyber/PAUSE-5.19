@@ -1,0 +1,36 @@
+{
+  "summary": "Verified this session's two frontend changes on public preview URL. HOME (static + multi-select categories): no page/body scroll at 390x844 and 375x667; home-content scrollHeight == clientHeight (712/712 and 535/535). Deck, 'Le tue categorie' and 'home-reading-progress' all visible in one screen. Fresh anonymous user with interests=[scienza,spazio,natura,arte,storia] shows 5 tiles all lit (aria-label='on'). Toggling home-cat-spazio flips its light to 'off' while other tiles stay 'on'; toggling again returns to 'on' (multi-select, no exclusivity). Turning off all but one and tapping the last lit tile keeps it on and shows testID 'home-min-one-toast' with text 'Tieni attiva almeno una categoria' which disappears within ~3s. Deck refetches by active categories: with only scienza lit, /api/discover-batch was called with interests=scienza only (observed URL). Persistence: after reload, off tiles remain off; localStorage 'pause.home_off.<uid>' = '[\"spazio\",\"natura\",\"storia\",\"arte\"]'. READER header ('Copertina'): on /deep-dive/v4-caffe-espresso?start=1 (82-char title) and /deep-dive/black-holes-basics?start=1, reader-header height is 100px (<=104), reader-header-thumb present, reader-header-title fully readable (not clipped/ellipsized: scrollW/H == clientW/H), deep-dive-page-label reads 'CAPITOLO 1 DI 6', reader-progress-fill present. On intro (no ?start=1) reader-progress row opacity is 0 (title hidden) and becomes 1 after tapping 'Leggi'. On final page label becomes 'DA RICORDARE'. At 320px width the long 82-char title still fully visible on 2 lines inside the 100px header. Backend smoke OK: GET /api/categories 200, GET /api/stories 200, GET /api/user/<id> 200, POST /api/user/interests 200, GET /api/discover-batch 200.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "Reanimated (web)", "issue": "Selected easing not supported on web; falls back to linear. Non-blocking, pre-existing."},
+      {"component": "React Native Web style props", "issue": "'textShadow*' style props deprecated (use 'textShadow'); props.pointerEvents deprecated (use style.pointerEvents). Non-blocking, pre-existing warnings surfacing across screens."}
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/artifacts_iter/home_390_after_toggle.jpeg",
+    "/app/test_reports/artifacts_iter/home_375.jpeg",
+    "/app/test_reports/artifacts_iter/reader_caffe_390.jpeg",
+    "/app/test_reports/artifacts_iter/reader_bh_390.jpeg",
+    "/app/test_reports/artifacts_iter/reader_caffe_320.jpeg"
+  ],
+  "action_items": [
+    "Optional: address non-blocking Expo web deprecations (textShadow*, pointerEvents) and Reanimated web easing warning to reduce console noise."
+  ],
+  "critical_code_review_comments": [
+    "Home: /app/frontend/app/(tabs)/discover.tsx correctly stores OFF ids (invariant \"add later categories appear ON by default\") and guarantees at least one lit via activeIds fallback + toggleCat guard.",
+    "Home layout is fully static (no ScrollView); deck area uses flex fill + measured height for adaptive card. testIDs (home-content, home-deck-area, home-categories, home-min-one-toast, category-light-home-<id>) are stable and semantic.",
+    "Reader header (/app/frontend/src/components/reader-header.tsx) uses reveal SharedValue for opacity + translateY; long-title font size steps (titleMd/Sm/Xs) prevent truncation while keeping header height ~100px.",
+    "Reader page (/app/frontend/app/deep-dive/[id].tsx) toggles labelIcon (book-outline vs bookmark-outline) and labelColor (cyan vs warning amber) correctly on last section, matching spec."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "100% (5/5 smoke)", "frontend": "100% (Home 7/7, Reader 6/6)" },
+  "seed_data_creation": "Ephemeral anonymous user_id created per run via POST /api/user/interests only; no auth data or persistent users touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Home Multi-select verified end-to-end on web preview at 390x844, 375x667 and Reader header at 320x640 & 390x844. testIDs used: home-screen, home-content, home-deck-area, home-categories, home-category-list, home-cat-<id>, category-light-home-<id> (aria-label on/off), home-min-one-toast, home-min-one-toast-text, reader-header, reader-header-thumb, reader-header-title, deep-dive-page-label, reader-progress, reader-progress-fill, deep-dive-start. To bootstrap: set localStorage pause.user_id + pause.onboarded.v2=1, POST /api/user/interests with the same id.",
+  "rca_of_issue": "N/A — no defects found in requested scope."
+}

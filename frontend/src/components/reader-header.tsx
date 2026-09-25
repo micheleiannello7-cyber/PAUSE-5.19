@@ -1,38 +1,47 @@
-// PAUSE — barra superiore del lettore verticale. Sempre visibile sopra il
-// contenuto: indietro, al centro il titolo di ciò che si sta leggendo (sempre
-// in vista) con sotto un indicatore discreto ("3 di 7" + barra sottile), e le
-// azioni già esistenti (Ascolta per premium, Salva). Il fondo è un vetro molto
-// trasparente che compare solo quando la copertina è scorsa via.
+// PAUSE — barra superiore del lettore verticale ("Copertina", scelta
+// dall'utente): miniatura della copertina a sinistra, titolo di ciò che si sta
+// leggendo (mai troncato: i titoli lunghi scendono di corpo) e sotto
+// l'occhiello "CAPITOLO 3 DI 7"; un filo di progresso corre lungo tutto il
+// bordo inferiore. Le azioni già esistenti (badge Ascolta) restano a destra.
+// Il fondo è un vetro molto trasparente che compare solo quando la copertina
+// è scorsa via.
 import { ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Ionicons from "@react-native-vector-icons/ionicons";
 import Animated, { SharedValue, useAnimatedStyle } from "react-native-reanimated";
 
+import { StoryPreview } from "@/src/api";
 import { makeStyles, useTheme, spacing, typography, withAlpha } from "@/src/theme";
 import { HighlightedTitle } from "@/src/components/highlighted-title";
+import { StoryHero } from "@/src/components/story-hero";
 
 export const READER_HEADER_H = 96;
 
 type Props = {
   topInset: number;
+  /** Storia in lettura: copertina in miniatura. */
+  story: StoryPreview;
   /** Titolo della storia: parole chiave nel colore del tema, come nella Home. */
   title: string;
   highlight: string[];
   label: string;
   /** Colore dell'etichetta (pervinca per l'introduzione, ambra per "Da ricordare", azzurro per i capitoli). */
   labelColor?: string;
+  /** Icona dell'occhiello (libro per i capitoli, segnalibro per "Da ricordare"). */
+  labelIcon?: string;
   /** 0..1, continuous through the whole story (drives the thin bar). */
   progress: SharedValue<number>;
   /** 0..1, opacity of the glass background (1 once the cover is scrolled away). */
   solid: SharedValue<number>;
   /** 0..1: il titolo nella barra compare solo quando il titolo grande della copertina è scorso via. */
   reveal: SharedValue<number>;
-  /** Badge piccolo (es. riapri il player): a destra, alla quota della riga progresso, mai sopra il titolo. */
+  /** Badge piccolo (es. riapri il player): a destra, centrato in altezza, mai sopra il titolo. */
   corner?: ReactNode;
 };
 
 export function ReaderHeader({
-  topInset, title, highlight, label, labelColor, progress, solid, reveal, corner,
+  topInset, story, title, highlight, label, labelColor, labelIcon = "book-outline", progress, solid, reveal, corner,
 }: Props) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -41,6 +50,8 @@ export function ReaderHeader({
   const scrim = useAnimatedStyle(() => ({ opacity: reveal.value }));
   // Solo transform (niente larghezza animata → nessun layout per frame).
   const fill = useAnimatedStyle(() => ({ transform: [{ scaleX: Math.max(0.001, Math.min(1, progress.value)) }] }));
+  const n = title.length;
+  const titleSize = n > 70 ? styles.titleXs : n > 55 ? styles.titleSm : n > 40 ? styles.titleMd : null;
 
   return (
     <View style={[styles.wrap, { paddingTop: topInset }]} testID="reader-header">
@@ -56,32 +67,34 @@ export function ReaderHeader({
       </Animated.View>
       {/* Fondo in vetro, molto trasparente, che appare scorrendo oltre la copertina. */}
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.solid, bg]} />
-      <View style={styles.row}>
-        <Animated.View style={[styles.center, corner ? styles.centerWithCorner : null, show]} pointerEvents="none" testID="reader-progress">
+      <Animated.View style={[styles.row, corner ? styles.rowWithCorner : null, show]} pointerEvents="none" testID="reader-progress">
+        <View style={styles.thumb} testID="reader-header-thumb">
+          <StoryHero story={story} style={StyleSheet.absoluteFill} size="thumb" iconSize={16} transition={0} />
+        </View>
+        <View style={styles.copy}>
           {/* Mai troncato: i titoli lunghi scendono di corpo e restano dentro l'altezza della barra. */}
-          <HighlightedTitle
-            title={title}
-            highlight={highlight}
-            style={[styles.title, title.length > 70 ? styles.titleXs : title.length > 55 ? styles.titleSm : title.length > 40 ? styles.titleMd : null]}
-            testID="reader-header-title"
-          />
-          <View style={styles.progressRow}>
-            {label ? <Text style={[styles.label, labelColor ? { color: labelColor } : null]} numberOfLines={1} testID="deep-dive-page-label">{label}</Text> : null}
-            <View style={styles.track} accessibilityRole="progressbar">
-              <Animated.View style={[styles.fillWrap, fill]}>
-                <LinearGradient
-                  colors={[colors.brandSecondary, colors.cyan]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.fill}
-                  testID="reader-progress-fill"
-                />
-              </Animated.View>
+          <HighlightedTitle title={title} highlight={highlight} style={[styles.title, titleSize]} testID="reader-header-title" />
+          {label ? (
+            <View style={styles.eyebrowRow}>
+              <Ionicons name={labelIcon as any} size={11} color={labelColor ?? colors.cyan} />
+              <Text style={[styles.label, labelColor ? { color: labelColor } : null]} numberOfLines={1} testID="deep-dive-page-label">{label}</Text>
             </View>
-          </View>
+          ) : null}
+        </View>
+      </Animated.View>
+      {corner ? <View style={styles.corner}>{corner}</View> : null}
+      {/* Filo di progresso lungo tutto il bordo inferiore della barra. */}
+      <Animated.View style={[styles.track, show]} accessibilityRole="progressbar" pointerEvents="none">
+        <Animated.View style={[styles.fillWrap, fill]}>
+          <LinearGradient
+            colors={[colors.brandSecondary, colors.cyan]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.fill}
+            testID="reader-progress-fill"
+          />
         </Animated.View>
-        {corner ? <View style={styles.corner}>{corner}</View> : null}
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -94,26 +107,27 @@ const useStyles = makeStyles((colors) => ({
     borderBottomColor: colors.glassBorder,
   },
   row: {
-    minHeight: READER_HEADER_H, paddingHorizontal: spacing.xl + spacing.md, paddingBottom: spacing.sm,
-    alignItems: "center", justifyContent: "center",
+    minHeight: READER_HEADER_H - 2, flexDirection: "row", alignItems: "center", gap: spacing.md,
+    paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md,
   },
-  center: { alignSelf: "stretch", alignItems: "center", justifyContent: "center", gap: 8 },
-  // Con il badge a destra il titolo lascia spazio simmetrico su entrambi i lati (resta centrato).
-  centerWithCorner: { paddingHorizontal: 30 },
+  // Con il badge a destra il testo gli lascia spazio (il badge è centrato in altezza).
+  rowWithCorner: { paddingRight: spacing.lg + 44 },
+  thumb: {
+    width: 42, height: 42, borderRadius: 10, overflow: "hidden",
+    backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.glassBorderStrong,
+  },
+  copy: { flex: 1, minWidth: 0, gap: 3 },
   title: {
-    color: colors.textWarm, fontFamily: typography.displayBold, fontSize: 19, lineHeight: 24, letterSpacing: -0.4, textAlign: "center",
+    color: colors.textWarm, fontFamily: typography.displayBold, fontSize: 15.5, lineHeight: 19, letterSpacing: -0.2,
     textShadowColor: withAlpha(colors.surface, 0.75), textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8,
   },
-  titleMd: { fontSize: 16.5, lineHeight: 20 },
-  titleSm: { fontSize: 14.5, lineHeight: 18 },
-  titleXs: { fontSize: 13, lineHeight: 16 },
-  progressRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  label: {
-    color: colors.cyan, fontFamily: typography.bodyBold,
-    fontSize: 13, letterSpacing: 2,
-  },
-  track: { width: 56, height: 3, borderRadius: 2, overflow: "hidden", backgroundColor: withAlpha(colors.onSurface, 0.14) },
-  fillWrap: { width: "100%", height: 3, borderRadius: 2, overflow: "hidden", transformOrigin: "left center", boxShadow: `0px 0px 10px ${colors.cyanGlow}` as any },
+  titleMd: { fontSize: 15, lineHeight: 18 },
+  titleSm: { fontSize: 14, lineHeight: 17 },
+  titleXs: { fontSize: 13.5, lineHeight: 16.5 },
+  eyebrowRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  label: { color: colors.cyan, fontFamily: typography.bodyBold, fontSize: 10, letterSpacing: 2 },
+  track: { height: 2, backgroundColor: withAlpha(colors.onSurface, 0.10) },
+  fillWrap: { width: "100%", height: 2, overflow: "hidden", transformOrigin: "left center", boxShadow: `0px 0px 10px ${colors.cyanGlow}` as any },
   fill: { flex: 1 },
-  corner: { position: "absolute", right: spacing.md, bottom: spacing.sm - 2, alignItems: "center", justifyContent: "center" },
+  corner: { position: "absolute", right: spacing.lg, top: 0, bottom: 0, justifyContent: "center", alignItems: "center", paddingTop: spacing.sm - spacing.md },
 }));

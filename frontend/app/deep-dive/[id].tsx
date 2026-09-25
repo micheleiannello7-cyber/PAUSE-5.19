@@ -307,13 +307,13 @@ export default function DeepDive() {
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace("/(tabs)/discover"));
 
-  // Barra in alto: titolo della storia sempre in vista + indicatore in
-  // maiuscolo "3 DI 7" · "DA RICORDARE". Nell'introduzione l'etichetta è già
-  // scritta nella pagina (occhiello con il pallino): qui resta solo la barra.
+  // Barra in alto: copertina in miniatura, titolo della storia sempre in vista
+  // e occhiello in maiuscolo "CAPITOLO 3 DI 7" · "DA RICORDARE". Nell'introduzione
+  // l'etichetta è già scritta nella pagina (occhiello con il pallino): qui resta vuota.
   const progressLabel =
     section === 0 ? ""
     : section >= lastSection ? t.remember.toUpperCase()
-    : `${section} ${t.of.toUpperCase()} ${chapterCount}`;
+    : `${t.chapter.toUpperCase()} ${section} ${t.of.toUpperCase()} ${chapterCount}`;
 
   return (
     <Screen style={styles.container}>
@@ -330,10 +330,12 @@ export default function DeepDive() {
       <StoryAudioProvider key={story.id} storyId={story.id} autoplay={listen === "1" && isPremium}>
         <ReaderHeader
           topInset={insets.top + spacing.xs}
+          story={story}
           title={story.title}
           highlight={story.highlight_words}
           label={progressLabel}
           labelColor={section === 0 ? colors.intro : section >= lastSection ? colors.warning : colors.cyan}
+          labelIcon={section >= lastSection ? "bookmark-outline" : "book-outline"}
           progress={progress}
           solid={headerSolid}
           reveal={headerReveal}

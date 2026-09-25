@@ -87,3 +87,24 @@ pre-generati (storie, capitoli, copertine, audio TTS) distribuiti dal backend.
 - P0: nessun blocco nel perimetro richiesto.
 - P1: validazione visiva dell'utente su dispositivo iOS/Android.
 - P2: eventuali ritocchi delle singole icone solo su richiesta.
+
+## Home statica + multi-selezione, barra lettura "Copertina" — 25 settembre 2026
+- Richiesta: Home senza scroll (tutto in una schermata); tessere Home = categorie
+  scelte in onboarding/Esplora, tutte accese; tocco accende/spegne singolarmente
+  (non più esclusivo); il mazzo segue le categorie attive; se si spegne l'ultima
+  accesa → avviso "Tieni attiva almeno una categoria" (toast ~2s + haptic errore).
+- `discover.tsx`: `ScrollView` → `View` statico; il mazzo occupa lo spazio residuo
+  (misurato a layout, `home-deck-area`), card alta = area − 20, clamp 170..width×1.2.
+  Stato spente per utente in AsyncStorage `pause.home_off.<uid>` (`src/home-focus.ts`):
+  si salvano le SPENTE così una categoria nuova parte accesa; se tutte accese il mazzo
+  usa gli interessi originali (comportamento precedente). Chiave i18n `home_min_one_category`.
+- Barra lettore (`reader-header.tsx`), variante "Copertina" scelta dall'utente fra 5
+  mockup (route temporanea `/dev-header-options`, rimossa): miniatura copertina 42px
+  (`StoryHero` thumb), titolo a sinistra mai troncato (corpo 15.5→13.5 per lunghezza,
+  max 82 caratteri in DB verificati a 320/390px), occhiello "CAPITOLO n DI N" con icona
+  libro (ultima pagina "DA RICORDARE" con segnalibro ambra), filo di progresso 2px a tutta
+  larghezza sul bordo inferiore. Nuova prop `story` (+ `labelIcon`); animazioni
+  reveal/solid/progress e badge audio (`corner`, centrato in altezza) invariati.
+  `READER_HEADER_H` resta 96.
+- Test `test_reports/iteration_8.json`: tutto PASS (Home statica 390/375, luci, toggle,
+  toast, persistenza, mazzo filtrato, header lettore 320/390, intro→capitolo, fine).

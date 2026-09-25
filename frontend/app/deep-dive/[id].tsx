@@ -22,6 +22,8 @@ import { IntroCtaButton } from "@/src/components/intro-cta-button";
 import { SwipeBack } from "@/src/components/swipe-back";
 import { StoryInfoGrid } from "@/src/components/story-info-grid";
 import { ReaderCoverBackdrop, CoverFrame } from "@/src/components/reader-cover-backdrop";
+import { ReaderEndingBackdrop } from "@/src/components/reader-ending-backdrop";
+import { storyFamily } from "@/src/story-palette";
 import { HighlightedTitle } from "@/src/components/highlighted-title";
 import { StoryAudioProvider, AudioSheet, AudioMiniBadge, IntroListenButton } from "@/src/components/story-audio-player";
 import { ReaderHeader, READER_HEADER_H } from "@/src/components/reader-header";
@@ -115,13 +117,13 @@ export default function DeepDive() {
   const [sheetH, setSheetH] = useState(430);
   const cardH = Math.max(150, Math.min(Math.round(cardW * 1.02), pageH - coverTop - pageBottom - sheetH));
   const cover: CoverFrame = { top: coverTop, left: (winW - columnW) / 2 + spacing.xl, width: cardW, height: cardH, radius: 22 };
-  // La trasformazione in sfondo è completa qui (tutta l'altezza della card:
-  // così, scorrendo al primo capitolo, la crescita è distesa e non "scatta").
-  const morphEnd = cover.top + cardH;
   // Quota (nella pagina) del titolo grande: sotto la card, dopo il padding
   // della scheda. Da qui in su la barra col titolo piccolo resta nascosta,
   // così tornando all'introduzione la copertina è di nuovo libera.
   useEffect(() => { bigTitleY.value = coverTop + cardH + spacing.md; }, [coverTop, cardH, bigTitleY]);
+  // Colore del tema della storia: solo un velo appena percettibile in alto sul
+  // fondo dark-navy della lettura (i contenitori dei capitoli ne riprendono la famiglia).
+  const tint = storyFamily(story?.category_id)[0];
   // Ultimo scroll programmatico (apertura su un capitolo, ripresa): solo un
   // movimento del lettore oltre quel punto conta come "gesto" per salvare.
   const autoY = useSharedValue(0);
@@ -318,15 +320,23 @@ export default function DeepDive() {
   return (
     <Screen style={styles.container}>
       <SwipeBack onBack={goBack}>
-      {/* Fondo notte: dal nero al blu-notte verso il basso, per profondità. */}
+      {/* Fondo notte stabile: dal nero al blu-notte verso il basso, per profondità. */}
       <LinearGradient
         colors={[colors.surface, colors.surfaceDeep]}
         locations={[0.35, 1]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
-      {/* Copertina: card arrotondata a riposo, sfondo cinematografico scorrendo. */}
-      <ReaderCoverBackdrop story={story} scrollY={scrollY} frame={cover} screenW={winW} screenH={winH} morphEnd={morphEnd} />
+      <LinearGradient
+        colors={[withAlpha(tint, 0.10), withAlpha(tint, 0.03), withAlpha(tint, 0)]}
+        locations={[0, 0.35, 0.65]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      {/* Copertina: card arrotondata dell'apertura, esce verso l'alto con lo scroll. */}
+      <ReaderCoverBackdrop story={story} scrollY={scrollY} frame={cover} />
+      {/* Schermata finale: sfondo cinematico dell'onboarding, compare solo sull'ultima pagina. */}
+      <ReaderEndingBackdrop scrollY={scrollY} pageH={pageHSV} lastSection={lastSection} />
       <StoryAudioProvider key={story.id} storyId={story.id} autoplay={listen === "1" && isPremium}>
         <ReaderHeader
           topInset={insets.top + spacing.xs}

@@ -108,3 +108,27 @@ pre-generati (storie, capitoli, copertine, audio TTS) distribuiti dal backend.
   `READER_HEADER_H` resta 96.
 - Test `test_reports/iteration_8.json`: tutto PASS (Home statica 390/375, luci, toggle,
   toast, persistenza, mazzo filtrato, header lettore 320/390, intro→capitolo, fine).
+
+## Lettura: contenitori capitoli dark-glass monocromatici — 25 settembre 2026
+- Richiesta (solo raffinamento visivo + scroll, nessuna nuova schermata): miniatura
+  header più grande; capitoli in contenitori vetro scuro premium/minimal con UNA sola
+  famiglia cromatica per storia (dal tema/categoria) e variazioni lievi tra capitoli;
+  fondo lettura dark-navy stabile; copertina solo nell'apertura (esce verso l'alto,
+  non più espansa a tutto schermo dietro ai capitoli); schermata finale con lo sfondo
+  cinematico dell'onboarding profilo; scroll/snap, barra superiore e pulsanti invariati.
+- `src/story-palette.ts`: famiglie per categoria (spazio cyan→blu→viola, scienza/tecnologia
+  cyan→blu, natura/geografia turchese→petrolio, storia/cultura/economia/animali ambra-oro,
+  psicologia viola, arte magenta, corpo-umano rosa; default cyan). `chapterTint(cat, i, n)`.
+  Il `glow_color` casuale dei capitoli nel DB NON è più usato nel lettore (dato intatto).
+- `reader-section.tsx`: card 26px, fondo `surfaceDeep` traslucido (0.56–0.74), bordo
+  tinta 0.34, riflesso superiore, alone 36px a 0.10, occhiello con quadratino+punto,
+  titolo con evidenziazione nella tinta; divider rimosso dai capitoli (resta nel finale);
+  fade fuori-fuoco 0.38→0.55 (più leggero). Testo/capitoli identici, nessun extra.
+- `reader-cover-backdrop.tsx`: niente morph a sfondo; la card copertina trasla con lo
+  scroll (`translateY: -y`, stretch al pull come prima). Prop `morphEnd/screenW/screenH`
+  rimosse. `[id].tsx`: velo tinta 0.10→0 in alto sul fondo notte; nuovo
+  `reader-ending-backdrop.tsx` (artwork `onboarding-profile-bg.jpg` + veli ONB) che
+  compare da 0.55 pagina prima della fine. Header: miniatura 42→56px (raggio 14).
+- Sistema di scroll a pagine (spring nativo / snapToOffsets web) NON toccato.
+- Test `test_reports/iteration_9.json`: tutto PASS (intro, copertina fuori schermo sui
+  capitoli, etichette 1..6, palette spazio/storia, finale con sfondo+pulsanti, 320/390).

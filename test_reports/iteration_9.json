@@ -1,0 +1,37 @@
+{
+  "summary": "Verified the READING screen visual refinement on public preview URL (Expo web) at 390x844 and 320x640, fresh anonymous user (localStorage pause.user_id + pause.onboarded.v2=1, lang=it). All 7 spec bullets pass. Intro (/deep-dive/black-holes-basics): chapter-cover-bg visible as a rounded card (top=16, height=349), deep-dive-hook + reader-intro-eyebrow 'INTRODUZIONE' + info pills + deep-dive-start CTA present, reader-progress opacity=0 (header title hidden), reader-header-thumb 56x56, reader-header height=100 (<=104). Tap deep-dive-start: header reveals (reader-progress opacity=1), deep-dive-page-label reads 'CAPITOLO 1 DI 6', deep-dive-chapter-card-1 visible with cyan border rgba(63,224,255,0.34); chapter-cover-bg is translated off-screen (rect top=-828, bottom=-479, i.e. <=0). Scrolling k*pageHeight through chapters 1..6: labels update correctly and all cards fit inside the viewport. Spazio palette family verified: card 1 rgba(63,224,255) cyan, card 3 rgba(94,140,255) blue, card 6 rgba(143,108,247) violet — all blue/purple-ish, none red/orange/green. Storia palette on v4-caffe-espresso: card 1 rgba(255,200,110), card 2 rgba(245,182,95) — amber/gold, NOT cyan. Final page: label 'DA RICORDARE', reader-ending-backdrop opacity=1 with <img>, summary-card + like-button + bookmark-button + share-story + next-story present and clickable; next-story navigates to another /deep-dive/... route. Regression: on intro reader-progress opacity=0, reveals after CTA; reader-progress-fill exists; header stays at 100px (<=104); long 82-char title of v4-caffe-espresso is fully readable next to the 56px thumb at 320 width (titleClipped=false, scrollH==clientH). Home /(tabs)/discover unchanged (home-screen, home-categories, home-deck-area all present, cover tiles clickable). Backend smoke: GET /api/stories/black-holes-basics -> 200. Non-blocking pre-existing web warnings only (textShadow*, pointerEvents, Reanimated easing).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "React Native Web style props", "issue": "'textShadow*' style props deprecated on web; also 'props.pointerEvents' deprecated. Pre-existing, non-blocking. Reference: /app/frontend/src/components/reader-section.tsx and reader-header.tsx use textShadowColor/Offset/Radius."},
+      {"component": "Reanimated (web)", "issue": "Selected easing not supported on web; falls back to linear. Non-blocking, pre-existing."}
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/artifacts_iter/reader_iter9_ch1_390.jpeg",
+    "/app/test_reports/artifacts_iter/reader_iter9_ending_390.jpeg",
+    "/app/test_reports/artifacts_iter/reader_iter9_caffe_390.jpeg",
+    "/app/test_reports/artifacts_iter/reader_iter9_caffe_320.jpeg",
+    "/app/test_reports/artifacts_iter/reader_iter9_discover.jpeg"
+  ],
+  "action_items": [
+    "Optional (non-blocking, pre-existing): migrate textShadow* to shorthand 'textShadow' and move pointerEvents from prop to style; pick a reanimated web-supported easing to silence console warnings."
+  ],
+  "critical_code_review_comments": [
+    "Story palette monochrome family is enforced via /app/frontend/src/story-palette.ts (FAMILIES per category, chapterTint interpolates within one family) — no random per-chapter colours; storia -> amber/gold, spazio -> cyan→blue→violet as designed.",
+    "/app/frontend/src/components/reader-section.tsx binds borderColor and glow to withAlpha(chapterTint(...)), and applies dark-glass fill via two stacked LinearGradients over surfaceDeep — matches 'dark-glass container with tinted border and soft glow' spec.",
+    "/app/frontend/src/components/reader-cover-backdrop.tsx keeps the cover as a rounded card at the intro frame and translates it up with scrollY (no full-screen expansion behind chapters) — verified: bounding box bottom<=0 on chapter 1.",
+    "/app/frontend/src/components/reader-ending-backdrop.tsx fades in the onboarding-profile-bg.jpg on the last page via interpolate([end-0.55*pageH, end]) — verified opacity=1 with <img> present at final page.",
+    "/app/frontend/src/components/reader-header.tsx uses a 56x56 thumb (styles.thumb width/height 56, radius 14) and title font-size steps (Md/Sm/Xs) to keep header height ≈100px even with long titles at 320 width — confirmed on v4-caffe-espresso."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "100% (1/1 smoke)", "frontend": "100% (7/7 spec bullets)" },
+  "seed_data_creation": "Ephemeral anonymous user_id created per run via localStorage only (POST /api/user/interests returned 403 here but is not required for the reader flow; app falls back to anonymous session). No persistent data mutated.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Reader testIDs verified: deep-dive-scroll, deep-dive-page-intro, deep-dive-page-chapter-<n>, deep-dive-page-end, deep-dive-chapter-<n>, deep-dive-chapter-card-<n>, reader-chapter-eyebrow-<n>, chapter-cover-bg, reader-ending-backdrop, reader-header, reader-header-thumb, reader-header-title, deep-dive-page-label, reader-progress, reader-progress-fill, summary-card, like-button, bookmark-button, share-story, next-story. On web, page snapping is validated via scroll.scrollTop = k * scroll.clientHeight. Spec-compliant border colours by story.category_id: spazio -> [3FE0FF,48B8FF,5E8CFF,7C7BFF,8F6CF7], storia -> [FFD98A,F5C46E,E8AE58,D99A4B].",
+  "rca_of_issue": "N/A — no defects found in requested scope."
+}

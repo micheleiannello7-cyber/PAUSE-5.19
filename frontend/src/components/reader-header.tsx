@@ -69,7 +69,7 @@ export function ReaderHeader({
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.solid, bg]} />
       <Animated.View style={[styles.row, corner ? styles.rowWithCorner : null, show]} pointerEvents="none" testID="reader-progress">
         <View style={styles.thumb} testID="reader-header-thumb">
-          <StoryHero story={story} style={StyleSheet.absoluteFill} size="thumb" iconSize={16} transition={0} />
+          <StoryHero story={story} style={StyleSheet.absoluteFill} size="thumb" iconSize={20} transition={0} />
         </View>
         <View style={styles.copy}>
           {/* Mai troncato: i titoli lunghi scendono di corpo e restano dentro l'altezza della barra. */}
@@ -113,7 +113,7 @@ const useStyles = makeStyles((colors) => ({
   // Con il badge a destra il testo gli lascia spazio (il badge è centrato in altezza).
   rowWithCorner: { paddingRight: spacing.lg + 44 },
   thumb: {
-    width: 42, height: 42, borderRadius: 10, overflow: "hidden",
+    width: 56, height: 56, borderRadius: 14, overflow: "hidden",
     backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.glassBorderStrong,
   },
   copy: { flex: 1, minWidth: 0, gap: 3 },
